@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { ref, set, onValue } from "firebase/database";
-  import { nanoid } from "nanoid";
-  import * as monaco from "monaco-editor";
-  import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-  import mermaid from "mermaid";
-  import { onMount } from "svelte";
+  import { ref, set, onValue } from "firebase/database"
+  import { nanoid } from "nanoid"
+  import * as monaco from "monaco-editor"
+  import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker"
+  import mermaid from "mermaid"
+  import { onMount } from "svelte"
+  import { fade } from "svelte/transition"
 
-  import url from "./lib/url";
-  import { database } from "./lib/firebase";
+  import url from "./lib/url"
+  import { database } from "./lib/firebase"
 
-  let monacoContainer, mermaidContainer, error, validMermaidSvg;
-  let editor: monaco.editor.IStandaloneCodeEditor;
-  let markdownText;
+  let monacoContainer, mermaidContainer, error, validMermaidSvg
+  let editor: monaco.editor.IStandaloneCodeEditor
+  let markdownText
   let defaultMarkdownText = [
     "graph TD",
     "  A[Christmas] -->|Get money| B(Go shopping)",
@@ -19,28 +20,33 @@
     "  C -->|One| D[Laptop]",
     "  C -->|Two| E[iPhone]",
     "  C -->|Three| F[fa:fa-car Car]",
-  ].join("\n");
-  let firstLoad = true;
-  let docId;
-  let debounceTimer;
-  let editMode;
+  ].join("\n")
+  let firstLoad = true
+  let docId
+  let debounceTimer
+  let editMode
+  let savedAlert
 
   if ($url.hash) {
-    docId = $url.hash.slice(2);
+    docId = $url.hash.slice(2)
   } else {
     // New document
-    editMode = true;
-    window.location.hash = "/" + nanoid();
-    docId = window.location.hash.slice(2);
+    editMode = true
+    window.location.hash = "/" + nanoid()
+    docId = window.location.hash.slice(2)
   }
 
-  const docRef = ref(database, "documents/" + docId);
+  const docRef = ref(database, "documents/" + docId)
 
   function writeDocData(docId, body) {
-    console.log("writing", { docId, body });
     set(ref(database, "documents/" + docId), {
       body,
-    });
+    }).then(() => {
+      savedAlert = true
+      setTimeout(() => {
+        savedAlert = false
+      }, 1000)
+    })
   }
 
   self.MonacoEnvironment = {
@@ -48,40 +54,42 @@
       // if (label === "markdown") {
       //   return new markdownWorker()
       // }
-      return new editorWorker();
+      return new editorWorker()
     },
-  };
+  }
 
   $: {
     try {
       mermaid.render("mermaid-container", markdownText, (svg) => {
         if (firstLoad) {
-          firstLoad = false;
+          firstLoad = false
         } else {
-          debounce(() => writeDocData(docId, markdownText))();
+          if (editMode) {
+            debounce(() => writeDocData(docId, markdownText))()
+          }
         }
-        validMermaidSvg = svg;
+        validMermaidSvg = svg
 
         if (mermaidContainer) {
-          error = "";
-          mermaidContainer.innerHTML = svg;
+          error = ""
+          mermaidContainer.innerHTML = svg
         }
-      });
+      })
     } catch (e) {
-      error = e.message;
+      error = e.message
       if (mermaidContainer) {
-        mermaidContainer.innerHTML = validMermaidSvg;
+        mermaidContainer.innerHTML = validMermaidSvg
       }
     }
   }
 
   function debounce(func, timeout = 1000) {
     return (...args) => {
-      clearTimeout(debounceTimer);
+      clearTimeout(debounceTimer)
       debounceTimer = setTimeout(() => {
-        func.apply(this, args);
-      }, timeout);
-    };
+        func.apply(this, args)
+      }, timeout)
+    }
   }
 
   onMount(() => {
@@ -89,43 +97,54 @@
       value: markdownText,
       language: "markdown",
       automaticLayout: true,
-    });
+    })
 
     editor.onDidChangeModelContent(() => {
-      const content = editor.getModel().getValue();
-      markdownText = content;
-    });
+      const content = editor.getModel().getValue()
+      markdownText = content
+    })
 
     onValue(docRef, (snapshot) => {
-      const data = snapshot.val();
+      const data = snapshot.val()
 
       if (data) {
-        markdownText = data.body;
+        markdownText = data.body
       } else {
-        markdownText = defaultMarkdownText;
+        markdownText = defaultMarkdownText
       }
 
-      editor.getModel().setValue(markdownText);
+      const pos = editor.getPosition()
+      editor.getModel().setValue(markdownText)
+      editor.setPosition(pos)
       // markdownText = data.body;
-    });
+    })
 
     // mermaid.initialize({ startOnLoad: true });
-  });
+  })
 </script>
 
 <main class="flex">
+  {#if savedAlert}
+    <div transition:fade class="z-10 alert shadow-lg alert-success fixed">
+      Saved.
+    </div>
+  {/if}
+
   <div
     bind:this={monacoContainer}
     class={editMode ? "w-1/2 h-screen" : "w-0 invisible"}
   />
-  <div class="btn btn-primary" on:click={() => (editMode = !editMode)}>
-    Edit
-  </div>
   <div
     class={`${
       editMode ? "w-1/2" : "w-full"
     } h-screen flex flex-col items-center`}
   >
+    <div
+      class="btn btn-primary fixed left-2 top-2"
+      on:click={() => (editMode = !editMode)}
+    >
+      Edit
+    </div>
     {#if error}
       <div class="alert shadow-lg alert-info text-xs">
         {error}
@@ -145,32 +164,5 @@
     /* text-align: center; */
     padding: 1em;
     margin: 0 auto;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    /* font-size: 4rem; */
-    font-weight: 100;
-    line-height: 1.1;
-    margin: 2rem auto;
-    max-width: 14rem;
-    /* @apply text-6xl; */
-  }
-
-  p {
-    max-width: 14rem;
-    margin: 1rem auto;
-    line-height: 1.35;
-  }
-
-  @media (min-width: 480px) {
-    h1 {
-      max-width: none;
-    }
-
-    p {
-      max-width: none;
-    }
   }
 </style>
