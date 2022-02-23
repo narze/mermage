@@ -1,23 +1,37 @@
 <script lang="ts">
-  import logo from "./assets/svelte.png"
-  import Counter from "./lib/Counter.svelte"
+  import logo from "./assets/svelte.png";
+  import Counter from "./lib/Counter.svelte";
+  import * as monaco from "monaco-editor";
+  import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+  // import markdownWorker from "monaco-editor/esm/vs/language/markdown/markdown.worker?worker"
+  import { onMount } from "svelte";
+
+  let editor: monaco.editor.IStandaloneCodeEditor;
+
+  self.MonacoEnvironment = {
+    getWorker(_, label) {
+      // if (label === "markdown") {
+      //   return new markdownWorker()
+      // }
+      return new editorWorker();
+    },
+  };
+
+  onMount(() => {
+    editor = monaco.editor.create(document.getElementById("container"), {
+      value: "function hello() {\n\talert('Hello world!');\n}",
+      language: "markdown",
+    });
+
+    editor.onDidChangeModelContent(() => {
+      const content = editor.getModel().getValue();
+      console.log({ content });
+    });
+  });
 </script>
 
 <main>
-  <img class="mx-auto" src={logo} alt="Svelte Logo" />
-  <h1>Hello Typescript!</h1>
-
-  <Counter />
-
-  <p>
-    Visit <a href="https://svelte.dev">svelte.dev</a> to learn how to build Svelte
-    apps.
-  </p>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme">SvelteKit</a> for
-    the officially supported framework, also powered by Vite!
-  </p>
+  <div id="container" class="w-1/2 h-screen" />
 </main>
 
 <style lang="postcss">
@@ -27,14 +41,9 @@
   }
 
   main {
-    text-align: center;
+    /* text-align: center; */
     padding: 1em;
     margin: 0 auto;
-  }
-
-  img {
-    height: 16rem;
-    width: 16rem;
   }
 
   h1 {
