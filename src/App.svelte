@@ -6,6 +6,7 @@
   import mermaid from "mermaid"
   import { onMount } from "svelte"
   import { fade } from "svelte/transition"
+  import screenfull from "screenfull"
 
   import url from "./lib/url"
   import { database } from "./lib/firebase"
@@ -119,7 +120,15 @@
       // markdownText = data.body;
     })
 
-    // mermaid.initialize({ startOnLoad: true });
+    mermaid.initialize({
+      startOnLoad: true,
+      flowchart: {
+        useMaxWidth: false,
+      },
+      sequence: {
+        useMaxWidth: false,
+      },
+    })
   })
 </script>
 
@@ -150,7 +159,13 @@
         {error}
       </div>
     {/if}
-    <div bind:this={mermaidContainer} />
+    <div
+      class="mermaid-container flex h-screen justify-center items-center"
+      bind:this={mermaidContainer}
+      on:dblclick={() => {
+        screenfull.toggle(mermaidContainer)
+      }}
+    />
   </div>
 </main>
 

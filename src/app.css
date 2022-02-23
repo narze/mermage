@@ -6,3 +6,8 @@
 #dmermaid-container {
   visibility: hidden;
 }
+
+#mermaid-container {
+  width: 90%;
+  height: 90%;
+}
