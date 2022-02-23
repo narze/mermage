@@ -1,12 +1,13 @@
 <script lang="ts">
-  import logo from "./assets/svelte.png";
-  import Counter from "./lib/Counter.svelte";
+  import { ref, set, onValue } from "firebase/database";
+  import { nanoid } from "nanoid";
   import * as monaco from "monaco-editor";
   import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
   import mermaid from "mermaid";
   import { onMount } from "svelte";
+
   import url from "./lib/url";
-  import { nanoid } from "nanoid";
+  import { database } from "./lib/firebase";
 
   let monacoContainer, mermaidContainer, error, validMermaidSvg;
   let editor: monaco.editor.IStandaloneCodeEditor;
@@ -22,16 +23,16 @@
   let firstLoad = true;
   let docId;
   let debounceTimer;
+  let editMode;
 
   if ($url.hash) {
     docId = $url.hash.slice(2);
   } else {
+    // New document
+    editMode = true;
     window.location.hash = "/" + nanoid();
     docId = window.location.hash.slice(2);
   }
-
-  import { ref, set, onValue } from "firebase/database";
-  import { database } from "./lib/firebase";
 
   const docRef = ref(database, "documents/" + docId);
 
@@ -87,6 +88,7 @@
     editor = monaco.editor.create(monacoContainer, {
       value: markdownText,
       language: "markdown",
+      automaticLayout: true,
     });
 
     editor.onDidChangeModelContent(() => {
@@ -112,8 +114,18 @@
 </script>
 
 <main class="flex">
-  <div bind:this={monacoContainer} class="w-1/2 h-screen" />
-  <div class="w-1/2 h-screen flex flex-col">
+  <div
+    bind:this={monacoContainer}
+    class={editMode ? "w-1/2 h-screen" : "w-0 invisible"}
+  />
+  <div class="btn btn-primary" on:click={() => (editMode = !editMode)}>
+    Edit
+  </div>
+  <div
+    class={`${
+      editMode ? "w-1/2" : "w-full"
+    } h-screen flex flex-col items-center`}
+  >
     {#if error}
       <div class="alert shadow-lg alert-info text-xs">
         {error}
