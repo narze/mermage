@@ -6,7 +6,6 @@
   import mermaid from "mermaid"
   import { onMount } from "svelte"
   import { fade } from "svelte/transition"
-  import screenfull from "screenfull"
 
   import url from "./lib/url"
   import { database } from "./lib/firebase"
@@ -27,6 +26,7 @@
   let debounceTimer
   let editMode
   let savedAlert
+  let isFullScreen = false
 
   if ($url.hash) {
     docId = $url.hash.slice(2)
@@ -163,7 +163,13 @@
       class="mermaid-container flex h-screen justify-center items-center"
       bind:this={mermaidContainer}
       on:dblclick={() => {
-        screenfull.toggle(mermaidContainer)
+        if (isFullScreen) {
+          document.exitFullscreen()
+          isFullScreen = false
+          return
+        }
+        mermaidContainer.requestFullscreen()
+        isFullScreen = true
       }}
     />
   </div>
