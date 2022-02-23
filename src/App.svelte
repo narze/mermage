@@ -8,7 +8,8 @@
 
   let monacoContainer, mermaidContainer, error, validMermaidSvg;
   let editor: monaco.editor.IStandaloneCodeEditor;
-  let markdownText = [
+  let markdownText;
+  let defaultMarkdownText = [
     "graph TD",
     "  A[Christmas] -->|Get money| B(Go shopping)",
     "  B --> C{Let me think}",
@@ -16,6 +17,21 @@
     "  C -->|Two| E[iPhone]",
     "  C -->|Three| F[fa:fa-car Car]",
   ].join("\n");
+  let firstLoad = true;
+  let docId = "test2";
+  let debounceTimer;
+
+  import { ref, set, onValue } from "firebase/database";
+  import { database } from "./lib/firebase";
+
+  const docRef = ref(database, "documents/" + docId);
+
+  function writeDocData(docId, body) {
+    console.log("writing", { docId, body });
+    set(ref(database, "documents/" + docId), {
+      body,
+    });
+  }
 
   self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -29,9 +45,14 @@
   $: {
     try {
       mermaid.render("mermaid-container", markdownText, (svg) => {
+        if (firstLoad) {
+          firstLoad = false;
+        } else {
+          debounce(() => writeDocData(docId, markdownText))();
+        }
         validMermaidSvg = svg;
+
         if (mermaidContainer) {
-          console.log({ svg });
           error = "";
           mermaidContainer.innerHTML = svg;
         }
@@ -44,6 +65,15 @@
     }
   }
 
+  function debounce(func, timeout = 1000) {
+    return (...args) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        func.apply(this, args);
+      }, timeout);
+    };
+  }
+
   onMount(() => {
     editor = monaco.editor.create(monacoContainer, {
       value: markdownText,
@@ -53,6 +83,19 @@
     editor.onDidChangeModelContent(() => {
       const content = editor.getModel().getValue();
       markdownText = content;
+    });
+
+    onValue(docRef, (snapshot) => {
+      const data = snapshot.val();
+
+      if (data) {
+        markdownText = data.body;
+      } else {
+        markdownText = defaultMarkdownText;
+      }
+
+      editor.getModel().setValue(markdownText);
+      // markdownText = data.body;
     });
 
     // mermaid.initialize({ startOnLoad: true });
