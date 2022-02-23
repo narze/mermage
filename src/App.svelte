@@ -3,10 +3,19 @@
   import Counter from "./lib/Counter.svelte";
   import * as monaco from "monaco-editor";
   import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-  // import markdownWorker from "monaco-editor/esm/vs/language/markdown/markdown.worker?worker"
+  import mermaid from "mermaid";
   import { onMount } from "svelte";
 
+  let monacoContainer, mermaidContainer, error, validMermaidSvg;
   let editor: monaco.editor.IStandaloneCodeEditor;
+  let markdownText = [
+    "graph TD",
+    "  A[Christmas] -->|Get money| B(Go shopping)",
+    "  B --> C{Let me think}",
+    "  C -->|One| D[Laptop]",
+    "  C -->|Two| E[iPhone]",
+    "  C -->|Three| F[fa:fa-car Car]",
+  ].join("\n");
 
   self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -17,24 +26,52 @@
     },
   };
 
+  $: {
+    try {
+      mermaid.render("mermaid-container", markdownText, (svg) => {
+        validMermaidSvg = svg;
+        if (mermaidContainer) {
+          console.log({ svg });
+          error = "";
+          mermaidContainer.innerHTML = svg;
+        }
+      });
+    } catch (e) {
+      error = e.message;
+      if (mermaidContainer) {
+        mermaidContainer.innerHTML = validMermaidSvg;
+      }
+    }
+  }
+
   onMount(() => {
-    editor = monaco.editor.create(document.getElementById("container"), {
-      value: "function hello() {\n\talert('Hello world!');\n}",
+    editor = monaco.editor.create(monacoContainer, {
+      value: markdownText,
       language: "markdown",
     });
 
     editor.onDidChangeModelContent(() => {
       const content = editor.getModel().getValue();
-      console.log({ content });
+      markdownText = content;
     });
+
+    // mermaid.initialize({ startOnLoad: true });
   });
 </script>
 
-<main>
-  <div id="container" class="w-1/2 h-screen" />
+<main class="flex">
+  <div bind:this={monacoContainer} class="w-1/2 h-screen" />
+  <div class="w-1/2 h-screen flex flex-col">
+    {#if error}
+      <div class="alert shadow-lg alert-info text-xs">
+        {error}
+      </div>
+    {/if}
+    <div bind:this={mermaidContainer} />
+  </div>
 </main>
 
-<style lang="postcss">
+<style>
   :root {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
       Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
@@ -54,7 +91,7 @@
     line-height: 1.1;
     margin: 2rem auto;
     max-width: 14rem;
-    @apply text-6xl;
+    /* @apply text-6xl; */
   }
 
   p {
