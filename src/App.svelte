@@ -1,10 +1,10 @@
 <script lang="ts">
-  import logo from './assets/svelte.png'
-  import Counter from './lib/Counter.svelte'
+  import logo from "./assets/svelte.png"
+  import Counter from "./lib/Counter.svelte"
 </script>
 
 <main>
-  <img src={logo} alt="Svelte Logo" />
+  <img class="mx-auto" src={logo} alt="Svelte Logo" />
   <h1>Hello Typescript!</h1>
 
   <Counter />
@@ -20,10 +20,10 @@
   </p>
 </main>
 
-<style>
+<style lang="postcss">
   :root {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   }
 
   main {
@@ -40,11 +40,12 @@
   h1 {
     color: #ff3e00;
     text-transform: uppercase;
-    font-size: 4rem;
+    /* font-size: 4rem; */
     font-weight: 100;
     line-height: 1.1;
     margin: 2rem auto;
     max-width: 14rem;
+    @apply text-6xl;
   }
 
   p {
