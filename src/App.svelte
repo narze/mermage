@@ -5,6 +5,8 @@
   import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
   import mermaid from "mermaid";
   import { onMount } from "svelte";
+  import url from "./lib/url";
+  import { nanoid } from "nanoid";
 
   let monacoContainer, mermaidContainer, error, validMermaidSvg;
   let editor: monaco.editor.IStandaloneCodeEditor;
@@ -18,8 +20,15 @@
     "  C -->|Three| F[fa:fa-car Car]",
   ].join("\n");
   let firstLoad = true;
-  let docId = "test2";
+  let docId;
   let debounceTimer;
+
+  if ($url.hash) {
+    docId = $url.hash.slice(2);
+  } else {
+    window.location.hash = "/" + nanoid();
+    docId = window.location.hash.slice(2);
+  }
 
   import { ref, set, onValue } from "firebase/database";
   import { database } from "./lib/firebase";
