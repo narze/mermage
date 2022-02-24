@@ -26,6 +26,7 @@
   let debounceTimer
   let editMode
   let savedAlert
+  let isFullScreen = false
 
   if ($url.hash) {
     docId = $url.hash.slice(2)
@@ -119,7 +120,15 @@
       // markdownText = data.body;
     })
 
-    // mermaid.initialize({ startOnLoad: true });
+    mermaid.initialize({
+      startOnLoad: true,
+      flowchart: {
+        useMaxWidth: false,
+      },
+      sequence: {
+        useMaxWidth: false,
+      },
+    })
   })
 </script>
 
@@ -150,7 +159,19 @@
         {error}
       </div>
     {/if}
-    <div bind:this={mermaidContainer} />
+    <div
+      class="mermaid-container flex h-screen justify-center items-center"
+      bind:this={mermaidContainer}
+      on:dblclick={() => {
+        if (isFullScreen) {
+          document.exitFullscreen()
+          isFullScreen = false
+          return
+        }
+        mermaidContainer.requestFullscreen()
+        isFullScreen = true
+      }}
+    />
   </div>
 </main>
 
