@@ -6,6 +6,9 @@ const config = {
   },
 
   plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["dark"],
+  },
 }
 
 module.exports = config

@@ -121,6 +121,7 @@
     })
 
     mermaid.initialize({
+      theme: "dark",
       startOnLoad: true,
       flowchart: {
         useMaxWidth: false,
