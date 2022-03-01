@@ -4,8 +4,9 @@
   import * as monaco from "monaco-editor"
   import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker"
   import mermaid from "mermaid"
-  import { onMount } from "svelte"
+  import { onDestroy, onMount } from "svelte"
   import { fade } from "svelte/transition"
+  import svgPanZoom from "svg-pan-zoom"
 
   import url from "./lib/url"
   import { database } from "./lib/firebase"
@@ -27,6 +28,8 @@
   let editMode
   let savedAlert
   let isFullScreen = false
+  let observer
+  let panZoomEl
 
   if ($url.hash) {
     docId = $url.hash.slice(2)
@@ -130,6 +133,34 @@
         useMaxWidth: false,
       },
     })
+
+    // Options for the observer (which mutations to observe)
+    const config = { attributes: true, childList: true, subtree: true }
+
+    // Callback function to execute when mutations are observed
+    const callback = function (mutationsList, observer) {
+      // Use traditional 'for loops' for IE 11
+      for (const mutation of mutationsList) {
+        if (mutation.type === "childList") {
+          if (panZoomEl) {
+            panZoomEl.destroy()
+          }
+
+          panZoomEl = svgPanZoom("#mermaid-container")
+        }
+      }
+    }
+
+    // Create an observer instance linked to the callback function
+    observer = new MutationObserver(callback)
+
+    // Start observing the target node for configured mutations
+    observer.observe(mermaidContainer, config)
+  })
+
+  onDestroy(() => {
+    // Later, you can stop observing
+    observer.disconnect()
   })
 </script>
 
@@ -161,7 +192,7 @@
       </div>
     {/if}
     <div
-      class="mermaid-container flex h-screen justify-center items-center"
+      class="mermaid-container flex h-screen justify-center items-center p-2"
       bind:this={mermaidContainer}
       on:dblclick={() => {
         if (isFullScreen) {
